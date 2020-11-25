@@ -100,7 +100,7 @@ def d_sem_func(x, r):
 def bar_enclosure(x, y , u, v, t, lam, l, h, s, omega):
     if y!= (-h+s) or v>0:
         print('y!= (-h+s) or v>0,', 'h:',h, 'v:', v)
-    t2 = t - ((2*s)/v)
+    t2 = t + (2/omega)
     if (coll(t, y, v, t, s, omega)*coll(t2, y, v, t, s, omega))<0:
         root = rtsafe(t, t2,y, v, t, s, omega, xacc=0.0000001, maxit = 100)
         if root>t2 or root<t:
@@ -126,9 +126,7 @@ def bar_enclosure(x, y , u, v, t, lam, l, h, s, omega):
                 uf = -u
         yf = -h + s
     else:
-        print('berror')
-    if vf<0:
-        print('other way4')
+        print('berror:', t, t2)
     return (xf, yf, uf, vf, tf)
 
 def semicircle_enclosure(x, y , u, v, t, lam, l, h, s, omega):
@@ -177,16 +175,17 @@ def semicircle_enclosure(x, y , u, v, t, lam, l, h, s, omega):
                     xf = x + ((h-y)/m)
                     ty = (yf-y)/vel_vec[1]
                     tx = (xf-x)/vel_vec[0]
-                    if abs(tx - ty) > 0.000001:
+                    if abs(tx - ty) > 1e-5:
                         print('failed!: tx', tx, 'ty', ty)
                     t+=ty
                     #print('exit enclosure:', 'x:', xf, 'y:', yf, 'u:', vel_vec[0], 'v:', vel_vec[1])
                     if vel_vec[1]>0:
                         print('other way 2', 'nor_vec:', nor_vec, 'p:', p, 'xf:', xf, 'vel_prev:'
-                        	, vel_prev, 'pos_prev:', pos_prev)
+                        	, vel_prev, 'pos_prev:', pos_prev, 'vel_curr:'
+                        	, vel_vec)
                     return (xf, yf, vel_vec[0], vel_vec[1], t)
             elif ((ysol1>h) and (ysol2>h)) and k>0:
-                if (x - sol1) < 0.000001:
+                if (x - sol1) < 1e-5:
                     xf = sol2
                     yf = ysol2
                 else:
@@ -198,15 +197,14 @@ def semicircle_enclosure(x, y , u, v, t, lam, l, h, s, omega):
         else:
             
             print('disc_neg')
+            break
         
         p = float(d_sem_func(xf, r))
         #print('p:', p)
-        if p != 0:
-            nor_vec = np.array([p, -np.sign(p)*(1/p)])
-            #print('nor vec:', nor_vec)
-            nor_vec = normalize(nor_vec.reshape(2, 1))
-        else:
-            nor_vec = np.array([0, -1]).reshape(2, 1)
+
+        nor_vec = np.array([p, -1])
+        #print('nor vec:', nor_vec)
+        nor_vec = normalize(nor_vec.reshape(2, 1))
         #nor_inc = normalize(vel_vec)
         vel_vec = vel_vec.reshape(2,1)
         ref = np.array(vel_vec - (2*np.dot(np.transpose(nor_vec), vel_vec)*nor_vec))
@@ -238,8 +236,8 @@ def stadium_travel(x, y , u, v, t, lam, l, h, s, omega):
                     #is in contact with the semi-circle enclosure.
     dt = ((-h+s)-y)/v   #time it would take to hit bottom wall
     time_step = [lt, rt, ut, dt] #feeding it into an array
-    print('t_left:',time_step[0], 't_right:',time_step[1], 
-           't_top:',time_step[2], 't_bottom:',time_step[3])
+    #print('t_left:',time_step[0], 't_right:',time_step[1], 
+    #       't_top:',time_step[2], 't_bottom:',time_step[3])
     
     #mechanism to find the lowest positive number
     for n, i in enumerate(time_step):
@@ -252,18 +250,17 @@ def stadium_travel(x, y , u, v, t, lam, l, h, s, omega):
     if di==0 or di == 1:
         uf = -u
         vf = v
-        yf = y + v*time_step[di]
+        yf = y + (v*time_step[di])
         sign = np.sign(yf)
-        if abs(yf)>h:
-            print('glitch: yf', yf, 'y', y, 'v', v, 'dt:', time_step[di])
+        if (yf<(-h+s)):
+            print('itch: yf', yf, 'y', y, 'v', v, 'dt:', time_step[di])
         elif di==0:
             xf = -l
-            if tf>4000:
-                print('next wall: left')
+            #print('next wall: left')
         else:
             xf = l
-            if tf>4000:
-                print('next wall: right')
+            #print('next wall: right')
+
     
     #if collision is with top or bottom wall
     if di==2 or di==3:
@@ -276,13 +273,13 @@ def stadium_travel(x, y , u, v, t, lam, l, h, s, omega):
             #    print('next wall: semi-circle enclosure')
             (xf, yf , uf, vf, tf) = semicircle_enclosure(xf, yf , u, v, tf, lam, l, h, s, omega)
             if (yf != h) or (abs(xf)>l):
-                print('glitch2:', 'x:', xf, 'y:', yf, 'u:', uf, 'v:', vf) 
+                print('glitch1:', 'x:', xf, 'y:', yf, 'u:', uf, 'v:', vf) 
             
         elif di==3:
             #print('bottom bar')
             #print('(-h+s)-y:',(-h+s)-y)
             if v>0:
-                print('???')
+                print('???', x , y , u, v, t)
             yf = -h+s
             xf = x + u*time_step[di]
             #if tf>4000:
@@ -305,7 +302,8 @@ def iteration(xi, yi, ui, vi, omega, lam, l, h, s, ni, t=0):
         #if tf>4000:
         #    print('\nx =', state_tup[0], 'y=', state_tup[1], 
         #          'u=', state_tup[2], 'v=', state_tup[3], 't=', state_tup[4])
-        states.append(state_tup)
+        if k%100 == 0:
+        	states.append(state_tup)
         (xi, yi, ui, vi, t) = (x, y, u, v, tf)
         k += 1
     n_osc = int((omega*t)/(2*np.pi))
@@ -339,23 +337,22 @@ l = 0.5
 h= 2
 s = 0.1
 
-
-res = iteration(xi =-0.25, yi=-0.65, ui = ui, 
+res = iteration(xi =-0.15, yi=-1.35, ui = ui, 
                 vi =vi,
-                omega=omega, lam=1, l=0.5, h=2,s = 0.1, 
+                omega=omega, lam=lam, l=l, h=h,s = s, 
                 ni=500000)
 plot_bill(res)
 '''
-def save_ensemble_states(ui= ((4*lam*omega)/np.sqrt(5)),
-                vi=(41*((4*lam*omega)/np.sqrt(5))), 
-                omega=(2*np.pi/70), 
-                lam=1, l=2, h=1,s = 0.1,  ni=10000, 
+def save_ensemble_states(ui=ui,
+                vi=vi,  
+                omega=omega, 
+                lam=lam, l=l, h=h,s = s,  ni=10000, 
                 ensemble_size = 100):
     k = 0
     systems = []
     while k<ensemble_size:
         res = iteration(xi = np.random.uniform(-l,l), 
-                        yi= np.random.uniform(-h,h),
+                        yi= np.random.uniform((-h+s),h),
                         ui= ui,
                 vi=vi, omega=omega, 
                 lam=lam, l=l, h=h,s = s,  ni=ni)
@@ -365,21 +362,13 @@ def save_ensemble_states(ui= ((4*lam*omega)/np.sqrt(5)),
     return systems
       
     # source, destination 
-                   
-    
-omega=1
-lam=1
-ui= 4*omega/np.pi
-vi= 100*ui
-l = 0.5
-h= 2
-s = 0.1
+        
 
 
 systems = save_ensemble_states(ui= ui,
                 vi=vi, 
                 omega=omega, 
-                lam=lam, l=l, h=h,s = s, ni=100000)
+                lam=lam, l=l, h=h,s = s, ni=500000)
 #np.save('stadium_100.npy', systems)   
 
 print('saved!!')
@@ -406,9 +395,9 @@ def load_and_plot(time_step=1):
                 (x1, y1, u1, v1, t1) = j
                 (x2, y2, u2, v2, t2) = i[n+1]
                 if t<=t2 and t>=t1:
-                    v += ((u1**2)+(v1**2)
+                    v += ((u1**2)+(v1**2))
                     break
-        vels.append(v)
+        vels.append(v/100)
         ts.append(t)
         t += time_step
         print(t)
@@ -416,10 +405,11 @@ def load_and_plot(time_step=1):
     print(vels)
     print(ts)
     
-    plt.plot(ts, vels/100)
+    plt.plot(ts, vels)
     plt.show()
    
         
 
-load_and_plot(time_step=10)
+load_and_plot(time_step=100)
+
 '''
