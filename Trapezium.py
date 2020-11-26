@@ -100,7 +100,7 @@ def d_sem_func(x, r):
 def bar_enclosure(x, y , u, v, t, lam, l, h, s, omega):
     if y!= (-h+s) or v>0:
         print('y!= (-h+s) or v>0,', 'h:',h, 'v:', v)
-    t2 = t + (2/omega)
+    t2 = t - ((3*s)/v)
     if (coll(t, y, v, t, s, omega)*coll(t2, y, v, t, s, omega))<0:
         root = rtsafe(t, t2,y, v, t, s, omega, xacc=0.0000001, maxit = 100)
         if root>t2 or root<t:
@@ -108,7 +108,8 @@ def bar_enclosure(x, y , u, v, t, lam, l, h, s, omega):
         dd = der_slit(root ,s , omega) #velocity of slit
         vf = (2*dd) - v
         if vf<0:
-            print('??')
+            print('??:',dd, v, root, t, t2)
+            vf = -v
         y_coll = slit(root ,s , omega)
         #print('ycoll:', y_coll)
         tf = root + (((-h+s)-y_coll)/vf)
