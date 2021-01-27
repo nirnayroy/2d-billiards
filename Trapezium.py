@@ -370,8 +370,4 @@ def load_and_plot(time_step=1):
     plt.plot(ts, vels)
     plt.show()
    
-        
-
 load_and_plot(time_step=100)
-
-
